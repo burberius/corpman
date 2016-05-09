@@ -1,0 +1,86 @@
+
+<div ng-controller="posController" class="ng-cloak">
+	<div class="panel panel-default">
+		<div class="panel-body">
+			<div class="col-xs-5 col-sm-5 col-md-2">
+				Sort: <select class="form-control" ng-model="orderField">
+					<option value="name">Name</option>
+					<option value="fuelRunTime">Fuel</option>
+					<option value="system">System</option>
+				</select>
+			</div>
+			<div class="col-xs-7 col-sm-7 col-md-3">
+				Filter: <input class="form-control" type="text"
+					ng-model="filterText" style="width: 10em">
+			</div>
+		</div>
+	</div>
+	<div class="hidden-xs hidden-sm col-md-7 clearfix">&nbsp;</div>
+	<div class="poslist">
+		<div class="pos"
+			ng-repeat="pos in posList | orderBy: orderField | filter: filterText">
+			<eveicon id="{{pos.typeID}}" name="{{pos.type}}"></eveicon>
+			{{pos.name}} <span class="location">{{pos.system}}</span> <span
+				class="moon">{{pos.moon}}</span> <span class="state"
+				ng-class="getPosStateColor(pos.state)">{{pos.state}}</span> <br />
+			F:
+			<progressbar class="progress-striped" value="pos.fuelPercent"
+				type="{{getFuelProgressType(pos.fuelRunTime)}}">{{pos.fuelRunTime
+			| dayHour}}</progressbar>
+			<span class="small">{{getEndDate(pos.fuelRunTime) |
+				date:'dd.MM.yy HH:mm':'UTC'}} ET</span> <br />
+
+			<span ng-hide="pos.state == 'Reinforced'">S: <progressbar class="progress-striped" value="pos.strontiumPercent">{{pos.reinforceRunTime
+			| dayHour}}</progressbar></span>
+			<span ng-show="pos.state == 'Reinforced'" class="red">Reinforcement ends: {{pos.stateTimestamp |
+				date:'dd.MM.yy HH:mm':'UTC'}} ET</span>
+
+			<span class="small" ng-hide="pos.state == 'Reinforced'">{{getEndDate(pos.reinforceRunTime) |
+				date:'dd.MM.yy HH:mm':'UTC'}} ET</span>
+
+			<div class="moduleArea"
+				ng-style="getModulesContainerStyle(pos.modules)">
+				<div posmodule ng-repeat="mod in pos.modules" module="mod"
+					class="posmodule" ng-class="getClass($index, pos.modules)" ng-cloak></div>
+			</div>
+		</div>
+	</div>
+
+	<div class="moduleList">
+		<div class="module"
+			ng-repeat="mod in moduleList | orderBy: orderField | filter: filterText">
+			{{mod.system}}<br />{{mod.type}}
+			<div posmodule module="mod" class="posmodule" ng-cloak></div>
+			<ul>
+				<li ng-repeat="(key, value) in mod.possiblePos"><a href=""
+					ng-click="setPos(mod.itemID, key)">{{value}}</a></li>
+			</ul>
+		</div>
+	</div>
+	<div ng-controller="statusController" class="panel panel-default">
+		<div class="panel-body status">
+			<table class="col-xs-12 col-sm-12 col-md-6">
+				<tr>
+					<td colspan="4" class="bold">POS</td>
+				</tr>
+				<tr>
+					<td>last updated:</td>
+					<td>{{status.posLastUpdate | date:'dd.MM. HH:mm:ss'}}</td>
+					<td>cached until:</td>
+					<td>{{status.posCachedUntil | date:'dd.MM. HH:mm:ss'}}</td>
+				</tr>
+			</table>
+			<table class="col-xs-12 col-sm-12 col-md-6">
+				<tr>
+					<td colspan="4" class="bold">Mods</td>
+				</tr>
+				<tr>
+					<td>last updated:</td>
+					<td>{{status.moduleLastUpdate | date:'dd.MM. HH:mm:ss'}}</td>
+					<td>cached until:</td>
+					<td>{{status.moduleCachedUntil | date:'dd.MM. HH:mm:ss'}}</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+</div>

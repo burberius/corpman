@@ -1,0 +1,11 @@
+.classpath
+.project
+.settings/
+.tern-project
+logfile*
+application.properties
+target/
+node_modules/
+src/main/resources/public/style.css
+src/main/resources/public/app.js
+src/main/resources/public/rest.js

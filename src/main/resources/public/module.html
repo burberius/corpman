@@ -1,0 +1,5 @@
+<div class="cutname">{{module.name}}</div>
+<eveicon id="{{module.typeID}}" name="{{module.type}}"></eveicon>
+<eveicon id="{{module.contentTypeID}}" name="{{module.content}}" ng-if="module.container || reactor"></eveicon><br/>
+<progressbar class="progress-striped" value="module.percent" ng-if="module.container" 
+	type="{{type}}" tooltip="{{module.quantity}}/{{module.containerQuantity}} = {{module.percent | number:1}}% = {{module.volume | number:1}}m³ -> {{end | date:'dd.MM.yy HH:mm':'UTC'}} ET" tooltip-trigger="mouseenter">{{time}}</progressbar>
