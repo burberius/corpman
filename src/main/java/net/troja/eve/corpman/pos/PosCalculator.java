@@ -16,13 +16,13 @@ public class PosCalculator {
     private ReactionsRepository reactionsRepository;
 
     public int getFixedQuantity(final PosModule posModule, final int quantityPerRun) {
-        final int quantity = posModule.getQuantity();
-        if (posModule.getTypeID() == PosTypeIds.TYPEID_COUPLING_ARRAY) {
-            return quantity;
+        int quantity = posModule.getQuantity();
+        if (posModule.getTypeID() != PosTypeIds.TYPEID_COUPLING_ARRAY) {
+            final long timeDiff = (System.currentTimeMillis() - posModule.getCachedUntil().getTime()) + (6 * 60 * 60 * 1000);
+            final int extraQuantity = quantityPerRun * (int) Math.ceil(timeDiff / (60 * 60 * 1000d));
+            quantity += extraQuantity;
         }
-        final long timeDiff = (System.currentTimeMillis() - posModule.getCachedUntil().getTime()) + (6 * 60 * 60 * 1000);
-        final int extraQuantity = quantityPerRun * (int) Math.ceil(timeDiff / (60 * 60 * 1000));
-        return quantity + extraQuantity;
+        return quantity;
     }
 
     public int getChangeQuantity(final PosModule posModule, final List<PosModule> modList) {
@@ -30,13 +30,7 @@ public class PosCalculator {
         final PosModule inputModule = PosHelper.getInputModuleOf(modList, posModule);
         final PosModule outputModule = posModule.getOutputModule();
         if (inputModule == null) {
-            if ((outputModule != null) && PosHelper.isReactor(outputModule.getTypeID())) {
-                // Output Silo
-                result = -100;
-            } else if ((outputModule != null) && PosHelper.isContainer(outputModule.getTypeID())) {
-                // Output Silos
-                result = getChangeQuantity(outputModule, modList);
-            }
+            result = getChangeQuantityOutput(modList, outputModule);
         } else if (inputModule.getTypeID() == PosTypeIds.TYPEID_MOON_HARVESTER) {
             // Harvester to Silo
             result = 100;
@@ -56,6 +50,18 @@ public class PosCalculator {
             result = getChangeQuantity(inputModule, modList);
         } else if (PosHelper.isContainer(inputModule.getTypeID())) {
             // Silos in row, search right
+            result = getChangeQuantity(outputModule, modList);
+        }
+        return result;
+    }
+
+    private int getChangeQuantityOutput(final List<PosModule> modList, final PosModule outputModule) {
+        int result = 0;
+        if ((outputModule != null) && PosHelper.isReactor(outputModule.getTypeID())) {
+            // Output Silo
+            result = -100;
+        } else if ((outputModule != null) && PosHelper.isContainer(outputModule.getTypeID())) {
+            // Output Silos
             result = getChangeQuantity(outputModule, modList);
         }
         return result;

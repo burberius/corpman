@@ -40,7 +40,7 @@ public class AssetRepository {
     private Date currentTime;
     private List<Asset> assets;
 
-    @Scheduled(initialDelay = CorpManApplication.DELAY_ASSETS, fixedRate = 600000)
+    @Scheduled(initialDelay = CorpManApplication.DELAY_ASSETS, fixedRate = CorpManApplication.RATE_ASSETS)
     public void update() {
         if ((cachedUntil == null) || cachedUntil.before(new Date())) {
             LOGGER.info("updating Assets");
@@ -112,10 +112,8 @@ public class AssetRepository {
             } else if (addAll || matches(filter, asset)) {
                 list.add(asset);
             }
-            if ((asset.getAssets() != null) && (asset.getAssets().size() > 0)) {
-                if (filterSubAssets(asset.getAssets(), list, filter, addAll)) {
-                    return true;
-                }
+            if ((asset.getAssets() != null) && (!asset.getAssets().isEmpty()) && filterSubAssets(asset.getAssets(), list, filter, addAll)) {
+                return true;
             }
         }
         return false;
@@ -123,28 +121,43 @@ public class AssetRepository {
 
     private boolean matches(final Filter filter, final Asset asset) {
         boolean result = true;
-        if ((filter.getTypeID() != null) && (filter.getTypeID() != asset.getTypeID())) {
+        if (matchesNotType(filter, asset) || matchesNotFlag(filter, asset) || matchesNotLocation(filter, asset)) {
             result = false;
-        } else if ((filter.getFlagID() != null) && (filter.getFlagID() != asset.getFlag())) {
-            result = false;
-        } else if ((filter.getLocationID() != null) && (filter.getLocationID().longValue() != asset.getLocationID())) {
-            result = false;
-        }
-        final InvType type = invTypesRepository.getInvType(asset.getTypeID());
-        if (type == null) {
-            LOGGER.error("Could not find type: " + asset.getTypeID());
-            result = false;
-        } else if ((filter.getCategoryID() != null) && (filter.getCategoryID() != type.getCategoryID())) {
-            result = false;
-        } else if ((filter.getGroupID() != null) && (filter.getGroupID() != type.getGroupID())) {
-            result = false;
+        } else {
+            final InvType type = invTypesRepository.getInvType(asset.getTypeID());
+            if (type == null) {
+                LOGGER.error("Could not find type: " + asset.getTypeID());
+                result = false;
+            } else if (matchesNotCategory(filter, type) || matchesNotGroup(filter, type)) {
+                result = false;
+            }
         }
         return result;
     }
 
+    private boolean matchesNotGroup(final Filter filter, final InvType type) {
+        return (filter.getGroupID() != null) && (filter.getGroupID() != type.getGroupID());
+    }
+
+    private boolean matchesNotCategory(final Filter filter, final InvType type) {
+        return (filter.getCategoryID() != null) && (filter.getCategoryID() != type.getCategoryID());
+    }
+
+    private boolean matchesNotLocation(final Filter filter, final Asset asset) {
+        return (filter.getLocationID() != null) && (filter.getLocationID().longValue() != asset.getLocationID());
+    }
+
+    private boolean matchesNotFlag(final Filter filter, final Asset asset) {
+        return (filter.getFlagID() != null) && (filter.getFlagID() != asset.getFlag());
+    }
+
+    private boolean matchesNotType(final Filter filter, final Asset asset) {
+        return (filter.getTypeID() != null) && (filter.getTypeID() != asset.getTypeID());
+    }
+
     public String getSimpleAssetString(final Asset asset) {
         final InvType type = invTypesRepository.getInvType(asset.getTypeID());
-        final StringBuilder retString = new StringBuilder();
+        final StringBuilder retString = new StringBuilder(60);
         retString.append(locationRepository.getLocationName(asset.getLocationID())).append(" (").append(asset.getLocationID()).append(") - ")
         .append(invTypesRepository.getName(asset.getTypeID())).append(" (").append(asset.getTypeID()).append(") - ")
         .append(asset.getQuantity()).append(" ").append(asset.getRawQuantity()).append(" - ").append(type.getGroupName()).append(" (")

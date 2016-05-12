@@ -45,7 +45,7 @@ public class PosManagingController {
     private long lastUpdate;
     private Runnable broadcastTrigger;
 
-    @Scheduled(initialDelay = CorpManApplication.DELAY_POS, fixedRate = 600000)
+    @Scheduled(initialDelay = CorpManApplication.DELAY_POS, fixedRate = CorpManApplication.RATE_POS)
     public void update() {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("update start");

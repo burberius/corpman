@@ -47,7 +47,7 @@ public class EveApiRepository {
         auth = new ApiAuthorization(eveApiId, eveApiVCode);
     }
 
-    @Scheduled(initialDelay = CorpManApplication.DELAY_CORPSHEET, fixedRate = 6000000)
+    @Scheduled(initialDelay = CorpManApplication.DELAY_CORPSHEET, fixedRate = CorpManApplication.RATE_CORPSHEET)
     public void update() {
         final CorpSheetParser parser = new CorpSheetParser();
         try {

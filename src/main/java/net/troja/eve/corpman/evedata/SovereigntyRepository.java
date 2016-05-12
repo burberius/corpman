@@ -25,7 +25,7 @@ public class SovereigntyRepository {
     public SovereigntyRepository() {
     }
 
-    @Scheduled(initialDelay = CorpManApplication.DELAY_SOV, fixedRate = 6000000)
+    @Scheduled(initialDelay = CorpManApplication.DELAY_SOV, fixedRate = CorpManApplication.RATE_SOV)
     public void update() {
         final SovereigntyResponse sovereigntyResponse = eveApiRepository.getSovereigntyInformation();
         if (sovereigntyResponse != null) {

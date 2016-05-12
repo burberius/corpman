@@ -62,7 +62,7 @@ public class PosModuleController {
 
     private final Filter starbaseFilter = new Filter(null, null, CATEGORY_STARBASE, null, null);
 
-    @Scheduled(initialDelay = CorpManApplication.DELAY_POSMODULE, fixedRate = 3600000)
+    @Scheduled(initialDelay = CorpManApplication.DELAY_POSMODULE, fixedRate = CorpManApplication.RATE_POSMODULE)
     public void update() {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("loadPosModuleData start");

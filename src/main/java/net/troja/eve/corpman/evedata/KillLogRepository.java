@@ -26,7 +26,7 @@ public class KillLogRepository {
     private int kills;
     private int losses;
 
-    // @Scheduled(initialDelay = CorpManApplication.DELAY_KILLLOG, fixedRate = 6000000)
+    // @Scheduled(initialDelay = CorpManApplication.DELAY_KILLLOG, fixedRate = CorpManApplication.RATE_KILLLOG)
     public void update() {
         LOGGER.info("Update");
         final KillLogResponse response = eveApiRepository.getKillLog();
