@@ -21,6 +21,22 @@ You just need a JRE 8 to run the JAR file:
 ```
 java -jar corpman-VERSION.jar
 ```
+As data storage you need a MySQL database, the settings are explained in the next step.
+
+## Setting
+Default settings in the package:
+```
+server.address=127.0.0.1
+server.port=8080
+spring.datasource.url=jdbc:mysql://localhost/corpman
+spring.datasource.username=corpman
+spring.datasource.password=password
+spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+spring.datasource.testOnBorrow=true
+spring.datasource.validationQuery=SELECT 1
+```
+These can be overwritten in an extra *application.properties* 
+file next to the jar a startup.
 
 ## Enhancements
 If you want a special feature and are willing to pay for it, just contact me. Or file an
