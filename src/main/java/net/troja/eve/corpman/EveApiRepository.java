@@ -3,10 +3,11 @@ package net.troja.eve.corpman;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Repository;
 
@@ -32,46 +33,55 @@ import com.beimin.eveapi.response.shared.LocationsResponse;
 import com.beimin.eveapi.response.shared.WalletJournalResponse;
 
 @Repository
-public class EveApiRepository {
+public class EveApiRepository implements ConfigurationChangeListener {
     private static final Logger LOGGER = LogManager.getLogger(EveApiRepository.class);
 
-    private final ApiAuthorization auth;
+    private ApiAuthorization auth;
     private long allianceId;
     private long corpId;
     private double taxRate;
 
     @Autowired
-    public EveApiRepository(final Environment env) {
-        final int eveApiId = Integer.parseInt(env.getRequiredProperty("eveapi.id"));
-        final String eveApiVCode = env.getRequiredProperty("eveapi.vcode");
-        auth = new ApiAuthorization(eveApiId, eveApiVCode);
+    private ConfigurationManager configManager;
+
+    public EveApiRepository() {
+    }
+
+    @PostConstruct
+    public void init() {
+        configManager.addChangeListener(this);
+        configurationChanged(configManager.getConfiguration());
     }
 
     @Scheduled(initialDelay = CorpManApplication.DELAY_CORPSHEET, fixedRate = CorpManApplication.RATE_CORPSHEET)
     public void update() {
-        final CorpSheetParser parser = new CorpSheetParser();
-        try {
-            final CorpSheetResponse corpSheetResponse = parser.getResponse(auth);
-            if (corpSheetResponse != null) {
-                allianceId = corpSheetResponse.getAllianceID();
-                corpId = corpSheetResponse.getCorporationID();
-                taxRate = corpSheetResponse.getTaxRate();
+        if (auth != null) {
+            final CorpSheetParser parser = new CorpSheetParser();
+            try {
+                final CorpSheetResponse corpSheetResponse = parser.getResponse(auth);
+                if (corpSheetResponse != null) {
+                    allianceId = corpSheetResponse.getAllianceID();
+                    corpId = corpSheetResponse.getCorporationID();
+                    taxRate = corpSheetResponse.getTaxRate();
+                }
+            } catch (final ApiException e) {
+                LOGGER.warn("Could not read corp sheet", e);
             }
-        } catch (final ApiException e) {
-            LOGGER.warn("Could not read corp sheet", e);
         }
     }
 
     public Set<Starbase> getPosList() {
         final StarbaseListParser parser = new StarbaseListParser();
         Set<Starbase> starbases = null;
-        try {
-            final StarbaseListResponse response = parser.getResponse(auth);
-            if (!response.hasError()) {
-                starbases = response.getAll();
+        if (auth != null) {
+            try {
+                final StarbaseListResponse response = parser.getResponse(auth);
+                if (!response.hasError()) {
+                    starbases = response.getAll();
+                }
+            } catch (final ApiException e) {
+                LOGGER.warn("Could not access starbase list", e);
             }
-        } catch (final ApiException e) {
-            LOGGER.warn("Could not access starbase list", e);
         }
         return starbases;
     }
@@ -79,13 +89,15 @@ public class EveApiRepository {
     public StarbaseDetailResponse getPosDetails(final long posId) {
         final StarbaseDetailParser parser = new StarbaseDetailParser();
         StarbaseDetailResponse response = null;
-        try {
-            response = parser.getResponse(auth, posId);
-            if (response.hasError()) {
-                response = null;
+        if (auth != null) {
+            try {
+                response = parser.getResponse(auth, posId);
+                if (response.hasError()) {
+                    response = null;
+                }
+            } catch (final ApiException e) {
+                LOGGER.warn("Could not access starbase details", e);
             }
-        } catch (final ApiException e) {
-            LOGGER.warn("Could not access starbase details", e);
         }
         return response;
     }
@@ -93,13 +105,15 @@ public class EveApiRepository {
     public Set<Location> getLocationNames(final List<Long> locationIds) {
         final LocationsParser parser = new LocationsParser();
         Set<Location> locations = null;
-        try {
-            final LocationsResponse response = parser.getResponse(auth, locationIds);
-            if (!response.hasError()) {
-                locations = response.getAll();
+        if (auth != null) {
+            try {
+                final LocationsResponse response = parser.getResponse(auth, locationIds);
+                if (!response.hasError()) {
+                    locations = response.getAll();
+                }
+            } catch (final ApiException e) {
+                LOGGER.warn("Could not access starbase details", e);
             }
-        } catch (final ApiException e) {
-            LOGGER.warn("Could not access starbase details", e);
         }
         return locations;
     }
@@ -107,10 +121,12 @@ public class EveApiRepository {
     public AssetListResponse getAssets() {
         final AssetListParser parser = new AssetListParser();
         AssetListResponse response = null;
-        try {
-            response = parser.getResponse(auth);
-        } catch (final ApiException e) {
-            LOGGER.warn("Could not access assets", e);
+        if (auth != null) {
+            try {
+                response = parser.getResponse(auth);
+            } catch (final ApiException e) {
+                LOGGER.warn("Could not access assets", e);
+            }
         }
         return response;
     }
@@ -118,10 +134,12 @@ public class EveApiRepository {
     public SovereigntyResponse getSovereigntyInformation() {
         final SovereigntyParser parser = new SovereigntyParser();
         SovereigntyResponse response = null;
-        try {
-            response = parser.getResponse();
-        } catch (final ApiException e) {
-            LOGGER.warn("Could not get sovereignty information", e);
+        if (auth != null) {
+            try {
+                response = parser.getResponse();
+            } catch (final ApiException e) {
+                LOGGER.warn("Could not get sovereignty information", e);
+            }
         }
         return response;
     }
@@ -129,10 +147,12 @@ public class EveApiRepository {
     public WalletJournalResponse getWalletJournal(final long startRef, final int count) {
         final WalletJournalParser journalParser = new WalletJournalParser();
         WalletJournalResponse response = null;
-        try {
-            response = journalParser.getResponse(auth, 1000, startRef, count);
-        } catch (final ApiException e) {
-            LOGGER.warn("Could not get wallet journal", e);
+        if (auth != null) {
+            try {
+                response = journalParser.getResponse(auth, 1000, startRef, count);
+            } catch (final ApiException e) {
+                LOGGER.warn("Could not get wallet journal", e);
+            }
         }
         return response;
     }
@@ -140,10 +160,12 @@ public class EveApiRepository {
     public KillLogResponse getKillLog() {
         final KillLogParser killLogParser = new KillLogParser();
         KillLogResponse response = null;
-        try {
-            response = killLogParser.getResponse(auth);
-        } catch (final ApiException e) {
-            LOGGER.warn("Could not get kill log", e);
+        if (auth != null) {
+            try {
+                response = killLogParser.getResponse(auth);
+            } catch (final ApiException e) {
+                LOGGER.warn("Could not get kill log", e);
+            }
         }
         return response;
     }
@@ -158,5 +180,13 @@ public class EveApiRepository {
 
     public double getTaxRate() {
         return taxRate;
+    }
+
+    @Override
+    public void configurationChanged(final Configuration config) {
+        if (config.getEveApiId() > 0) {
+            auth = new ApiAuthorization((int) config.getEveApiId(), config.getEvaApiVCode());
+            update();
+        }
     }
 }

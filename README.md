@@ -36,7 +36,7 @@ spring.datasource.testOnBorrow=true
 spring.datasource.validationQuery=SELECT 1
 ```
 These can be overwritten in an extra *application.properties* 
-file next to the jar a startup.
+file next to the jar on startup.
 
 ## Enhancements
 If you want a special feature and are willing to pay for it, just contact me. Or file an

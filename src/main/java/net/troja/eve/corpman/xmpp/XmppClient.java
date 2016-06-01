@@ -7,8 +7,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import javax.annotation.PreDestroy;
+
+import net.troja.eve.corpman.Configuration;
 
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.SmackException;
@@ -24,38 +27,19 @@ import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration.Builder;
 import org.jivesoftware.smack.util.TLSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 @Service
-public class XmppClient implements ChatManagerListener {
+public class XmppClient implements ChatManagerListener, Consumer<Configuration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(XmppClient.class);
 
     private AbstractXMPPConnection connection = null;
     private Chat broadcast;
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     private final Map<String, BiConsumer<Chat, String>> commands = new HashMap<>();
     private final Map<String, String> commandsAndDescription = new HashMap<>();
     private final Map<Integer, Long> chatTimeouts = new HashMap<>();
-
-    @Autowired
-    public XmppClient(final Environment env) {
-        try {
-            final String server = env.getRequiredProperty("xmpp.server");
-            final int port = Integer.parseInt(env.getProperty("xmpp.port", "5222"));
-            final String user = env.getRequiredProperty("xmpp.user");
-            final String password = env.getRequiredProperty("xmpp.password");
-            final String broadcast = env.getProperty("xmpp.broadcast");
-            final boolean insecure = Boolean.parseBoolean(env.getProperty("xmpp.insecure", "false"));
-            final String message = env.getProperty("xmpp.statusmessage", "Working for my corp");
-            init(server, port, user, password, broadcast, insecure, message);
-        } catch (final IllegalStateException e) {
-            LOGGER.warn("XMPP disabled as configuration was not given");
-            enabled = false;
-        }
-    }
 
     private void init(final String server, final int port, final String user, final String password, final String broadcastAddress,
             final boolean insecure, final String message) {
@@ -148,6 +132,25 @@ public class XmppClient implements ChatManagerListener {
     @PreDestroy
     public void shutdown() {
         LOGGER.info("Shutting down");
-        connection.disconnect();
+        if (connection != null) {
+            connection.disconnect();
+        }
+    }
+
+    @Override
+    public void accept(final Configuration configuration) {
+        final String server = configuration.getXmppServer();
+        final int port = configuration.getXmppPort();
+        final String user = configuration.getXmppUsername();
+        final String password = configuration.getXmppPassword();
+        final String broadcast = configuration.getXmppBroadcast();
+        final boolean insecure = configuration.isXmppInsecure();
+        final String message = configuration.getXmppStatusMessage();
+        if (server == null) {
+            enabled = false;
+        } else {
+            shutdown();
+            init(server, port, user, password, broadcast, insecure, message);
+        }
     }
 }

@@ -46,7 +46,7 @@
         <dependency>
             <groupId>com.beimin</groupId>
             <artifactId>eveapi</artifactId>
-            <version>6.0.3</version>
+            <version>6.0.4</version>
         </dependency>
         <dependency>
             <groupId>mysql</groupId>
@@ -55,7 +55,7 @@
         <dependency>
             <groupId>net.troja.eve</groupId>
             <artifactId>crest</artifactId>
-            <version>0.3.3</version>
+            <version>0.3.4</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

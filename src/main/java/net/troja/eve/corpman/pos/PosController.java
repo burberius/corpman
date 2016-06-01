@@ -15,7 +15,9 @@ import java.util.TimeZone;
 
 import javax.annotation.PostConstruct;
 
-import net.troja.eve.corpman.CorpManApplication;
+import net.troja.eve.corpman.Configuration;
+import net.troja.eve.corpman.ConfigurationChangeListener;
+import net.troja.eve.corpman.ConfigurationManager;
 import net.troja.eve.corpman.evedata.InvTypesRepository;
 import net.troja.eve.corpman.pos.db.Pos;
 import net.troja.eve.corpman.pos.db.PosModule;
@@ -27,7 +29,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/pos")
-public class PosController {
+public class PosController implements ConfigurationChangeListener {
     private static final Logger LOGGER = LogManager.getLogger(PosController.class);
     private static final long CACHE_TIME = 1000 * 60 * 15;
     private static final Set<Integer> broadcastTimes = new HashSet<>(Arrays.asList(new Integer[] { 1, 2, 3, 6, 12, 24, 36 }));
@@ -58,7 +59,7 @@ public class PosController {
     @Autowired
     private XmppClient xmppClient;
     @Autowired
-    private Environment env;
+    private ConfigurationManager configManager;
 
     private List<PosWebBean> cachedPosList;
     private long posListCachedUntil;
@@ -173,13 +174,8 @@ public class PosController {
         if (!xmppClient.isEnabled()) {
             return;
         }
-        try {
-            hoursToShow = Integer.parseInt(env.getProperty(CorpManApplication.POS_ALERT_HOURS, "48"));
-            hoursToBroadcast = Integer.parseInt(env.getProperty(CorpManApplication.POS_BROADCAST_HOURS, "24"));
-        } catch (final NumberFormatException e) {
-            LOGGER.warn(CorpManApplication.POS_ALERT_HOURS + " must be a number and not '" + env.getProperty(CorpManApplication.POS_ALERT_HOURS)
-                    + "', using default 48h");
-        }
+        configManager.addChangeListener(this);
+        configurationChanged(configManager.getConfiguration());
 
         xmppClient.addCommand("pos", "Get the current POS states", (chat, who) -> {
             final List<String> posStates = getPosStates().messages;
@@ -210,7 +206,7 @@ public class PosController {
         LOGGER.info("Check POS states for broadcast");
         final PosState posStates = getPosStates();
         if (posStates.messages.size() > 0) {
-            final int min = (int)Math.floor(posStates.minTime / 6d);
+            final int min = (int) Math.floor(posStates.minTime / 6d);
             LOGGER.info("Min: " + min + " " + posStates.minTime + " " + ((posStates.minTime % 6) == 0));
             if ((posStates.messages.size() > lastBroadcastMessageCount) || (broadcastTimes.contains(min) && ((posStates.minTime % 6) == 0))) {
                 xmppClient.broadcast("Broadcast for POS states:");
@@ -318,6 +314,14 @@ public class PosController {
         public PosState(final List<String> messages, final int minTime) {
             this.messages = messages;
             this.minTime = minTime;
+        }
+    }
+
+    @Override
+    public void configurationChanged(final Configuration configuration) {
+        if (configuration != null) {
+            hoursToShow = configuration.getPosAlertHours();
+            hoursToBroadcast = configuration.getPosBroadcastHours();
         }
     }
 }
